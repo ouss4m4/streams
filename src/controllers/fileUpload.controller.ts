@@ -15,18 +15,6 @@ export class fileUploadController {
     let csvStream = parseCsvFromDiskAndStream(filePath);
     // File is parsed and stream at this point
 
-    console.log();
-    if (req.file && req.file.filename.indexOf("(2)") > 0) {
-      // sleep 3 sec
-      console.log("sleeping for some seconds,. blocking other calls?");
-      await new Promise((resolve) => {
-        setTimeout(() => {
-          resolve("done");
-        }, 8000);
-      });
-    }
-
-    console.log("processing file after wait", req.file?.filename);
     const finalResult: IDownloadReponse = {
       success: 0,
       errors: [],
