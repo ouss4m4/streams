@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { join } from "path";
 import { parseCsvFromDiskAndStream } from "../lib/parseCsvFromDiskAndStream";
 import { fetchAndSaveImagesFromCsvRow } from "../lib/fetchAndSaveImagesFromCsvRow";
+import { logger } from "../logger";
 
 export type IDownloadReponse = {
   success: number;
@@ -10,7 +11,9 @@ export type IDownloadReponse = {
 
 export class fileUploadController {
   static async handleUpload(req: Request, res: Response): Promise<any> {
-    console.log("started processing ", req.file?.filename);
+    const startTime = Date.now();
+    logger.info(`started processing  ${req.file?.filename}`);
+
     const filePath = join(__dirname, "..", "uploads", req.file?.filename ?? "");
     let csvStream = parseCsvFromDiskAndStream(filePath);
     // File is parsed and stream at this point
@@ -33,7 +36,13 @@ export class fileUploadController {
         finalResult.errors = finalResult.errors.concat(resOrErr.value.errors);
       }
     });
-    console.log("finished processing ", req.file?.filename);
+
+    const timeTame = Date.now() - startTime;
+    logger.info(
+      `Csv parsing finished in ${
+        (Date.now() - startTime) / 1000
+      } seconds for file ${req.file?.filename}`
+    );
     return res.json({
       success: true,
       message: `Processed ${finalResult.success} images successfully`,
