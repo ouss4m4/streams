@@ -1,6 +1,7 @@
 import express, { NextFunction, Request, Response } from "express";
 import { fileUpload } from "./middleware/fileupload.middleware";
 import { fileUploadController } from "./controllers/fileUpload.controller";
+import { logger } from "./logger";
 
 const app = express();
 
@@ -24,7 +25,7 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 
 const startServer = () => {
   app.listen(3000, function () {
-    console.log(`listening on port 3000`);
+    logger.info("App is up and running");
   });
 };
 export { startServer };
