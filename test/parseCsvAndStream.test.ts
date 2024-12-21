@@ -11,7 +11,7 @@ jest.mock("fast-csv", () => ({
   parse: jest.fn(),
 }));
 
-describe("parseCsvFromDiskAndStream", () => {
+describe("parse csv from storage to stream", () => {
   it("should parse the CSV file correctly", () => {
     const mockFilePath = "mocked/path/to/file.csv";
 
