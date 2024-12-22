@@ -17,6 +17,10 @@ export class fileUploadController {
     const filePath = join(__dirname, "..", "uploads", req.file?.filename ?? "");
     let csvStream = parseCsvFromDiskAndStream(filePath);
 
+    // Start streaming response
+    res.setHeader("Content-Type", "text/plain");
+    res.write(`Processing started for file: ${req.file?.filename}\n`);
+
     // File is parsed and stream at this point
     const finalResult: IDownloadReponse = {
       success: 0,
@@ -25,9 +29,13 @@ export class fileUploadController {
 
     const rowProcessingPromises: Promise<IDownloadReponse>[] = [];
 
+    let rows = 0;
     // sku, image1, image2, image3
     for await (const row of csvStream) {
       rowProcessingPromises.push(fetchAndSaveImagesFromCsvRow(row));
+      if (++rows % 10 == 0) {
+        res.write(`${rows} processed so far \n`);
+      }
     }
     let rowsProcessingResult = await Promise.allSettled(rowProcessingPromises);
 
@@ -43,10 +51,17 @@ export class fileUploadController {
         (Date.now() - startTime) / 1000
       } seconds for file ${req.file?.filename}`
     );
-    return res.json({
-      success: true,
-      message: `Processed ${finalResult.success} images successfully`,
-      errors: finalResult.errors,
-    });
+    res.end(
+      JSON.stringify({
+        success: true,
+        message: `Processed ${finalResult.success} images successfully`,
+        errors: finalResult.errors,
+      })
+    );
+    // return res.json({
+    //   success: true,
+    //   message: `Processed ${finalResult.success} images successfully`,
+    //   errors: finalResult.errors,
+    // });
   }
 }
