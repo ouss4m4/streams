@@ -48,7 +48,7 @@
       const uploadCsvStatusCard = async (file) => {
         console.log(file);
         let card = document.createElement("div");
-        card.className = "py-2 px-4 rounded shadow";
+        card.className = "py-2 px-4 rounded shadow max-w-md";
         let header = document.createElement("div");
         header.className = "flex flex-col gap-4";
         let title = document.createElement("h2");
@@ -68,12 +68,23 @@
             method: "POST",
             body: form,
           });
+          if (!response.ok || !response.body) {
+            throw new Error("failed to fetch");
+          }
 
-          // response.j
-          // progress.textContent = JSON.stringify(response.body.json());
-          progress.textContent = "Finished";
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let streamDone = false;
+          while (!streamDone) {
+            const { value, done } = await reader.read();
+            streamDone = done;
 
-          console.log(response);
+            if (value) {
+              let text = decoder.decode(value, { stream: true });
+              console.log(text);
+              progress.textContent = text;
+            }
+          }
         } catch (err) {
           console.error(err);
         }
