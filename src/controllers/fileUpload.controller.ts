@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { join } from "path";
+import { parseCsvFromDiskAndStream } from "../lib/parseCsvFromDiskAndStream";
+import { fetchAndSaveImagesFromCsvRow } from "../lib/fetchAndSaveImagesFromCsvRow";
 import { logger } from "../logger";
-import { Worker } from "worker_threads";
 
 export type IDownloadReponse = {
   success: number;
@@ -14,49 +15,38 @@ export class fileUploadController {
     logger.info(`started processing  ${req.file?.filename}`);
 
     const filePath = join(__dirname, "..", "uploads", req.file?.filename ?? "");
+    let csvStream = parseCsvFromDiskAndStream(filePath);
 
-    const workerPromise = new Promise<IDownloadReponse>((resolve, reject) => {
-      const worker = new Worker(join(__dirname, "..", "lib/csvWorker.js"), {
-        workerData: { filePath },
-      });
-      console.log("worker executed...");
-      worker.on("message", (message) => {
-        if (message.success) {
-          resolve(message.result);
-        } else {
-          reject(new Error(message.error));
-        }
-      });
+    // File is parsed and stream at this point
+    const finalResult: IDownloadReponse = {
+      success: 0,
+      errors: [],
+    };
 
-      worker.on("error", (error) => reject(error));
-      worker.on("exit", (code) => {
-        if (code !== 0) {
-          reject(new Error(`Worker stopped with exit code ${code}`));
-        }
-      });
+    const rowProcessingPromises: Promise<IDownloadReponse>[] = [];
+
+    // sku, image1, image2, image3
+    for await (const row of csvStream) {
+      rowProcessingPromises.push(fetchAndSaveImagesFromCsvRow(row));
+    }
+    let rowsProcessingResult = await Promise.allSettled(rowProcessingPromises);
+
+    rowsProcessingResult.forEach((resOrErr) => {
+      if (resOrErr.status == "fulfilled") {
+        finalResult.success += resOrErr.value.success;
+        finalResult.errors = finalResult.errors.concat(resOrErr.value.errors);
+      }
     });
 
-    try {
-      const finalResult = await workerPromise;
-      const timeTaken = (Date.now() - startTime) / 1000;
-      logger.info(
-        `CSV parsing finished in ${timeTaken} seconds for file ${req.file?.filename}`
-      );
-
-      return res.json({
-        success: true,
-        message: `Processed ${finalResult.success} images successfully`,
-        errors: finalResult.errors,
-      });
-    } catch (error) {
-      logger.error(
-        `Error processing file ${req.file?.filename}: ${
-          (error as Error).message
-        }`
-      );
-      return res
-        .status(500)
-        .json({ success: false, message: (error as Error).message });
-    }
+    logger.info(
+      `Csv parsing finished in ${
+        (Date.now() - startTime) / 1000
+      } seconds for file ${req.file?.filename}`
+    );
+    return res.json({
+      success: true,
+      message: `Processed ${finalResult.success} images successfully`,
+      errors: finalResult.errors,
+    });
   }
 }
