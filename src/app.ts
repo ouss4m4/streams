@@ -2,8 +2,17 @@ import express, { NextFunction, Request, Response } from "express";
 import { fileUpload } from "./middleware/fileupload.middleware";
 import { fileUploadController } from "./controllers/fileUpload.controller";
 import { logger } from "./logger";
-
+import { join } from "path";
+import cors from "cors";
 const app = express();
+
+app.use(cors());
+app.use(express.static(join(__dirname, "public")));
+
+// Serve upload.html for /upload
+app.get("/upload", (req: Request, res: Response) => {
+  res.sendFile(join(__dirname, "public", "upload.html"));
+});
 
 app.post("/upload", fileUpload.single("items"), (req, res) =>
   fileUploadController.handleUpload(req, res)

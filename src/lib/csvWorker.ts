@@ -1,7 +1,7 @@
 import { parentPort, workerData } from "worker_threads";
 import { parseCsvFromDiskAndStream } from "../lib/parseCsvFromDiskAndStream";
 import { fetchAndSaveImagesFromCsvRow } from "../lib/fetchAndSaveImagesFromCsvRow";
-import { IDownloadReponse } from "../controllers/fileUpload.controller";
+import { IDownloadReponse } from "../controllers/fileUploadWorker.controller";
 
 async function processCsv(filePath: string) {
   const finalResult: IDownloadReponse = {
