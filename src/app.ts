@@ -34,7 +34,7 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 
 const startServer = () => {
   app.listen(3000, function () {
-    logger.info("App is up and running");
+    logger.info("App is up and running on 3000");
   });
 };
 export { startServer };
